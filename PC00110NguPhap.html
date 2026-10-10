@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BÀI 10 – NGỮ PHÁP - Flashcard</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:Arial,"Microsoft YaHei",sans-serif;
+  background:#fdfbf7;
+  display:flex; justify-content:center; color:#202124;
+}
+.app{width:min(860px,96vw); padding:30px 0 40px}
+h1{text-align:center;margin:0 0 15px;font-size:38.4px; font-weight: bold;}
+.progress{text-align:center;font-size:21.6px;color:#444;margin-bottom:20px; font-weight: bold;}
+.card-wrap{perspective:1200px; cursor:pointer}
+.card{
+  width:100%; height:592px; position:relative; transform-style:preserve-3d;
+  transition:transform .55s ease;
+}
+.card.flipped{transform:rotateY(180deg)}
+.face{
+  position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:24px; background:white; box-shadow:0 15px 45px rgba(0,0,0,.15);
+  display:flex; flex-direction:column; padding:36px; border:3px solid #eee; overflow-y:auto;
+}
+.front{justify-content:flex-start; align-items:flex-start; text-align:left}
+.back{transform:rotateY(180deg); text-align:left; align-items:flex-start; justify-content:flex-start; padding-top:40px;}
+
+.hl{color: #7c2d12; font-weight: bold; background-color: #fef08a; padding: 2px 6px; border-radius: 4px; border: 1px solid #eab308;}
+.hl-blue { color: #ffffff; font-weight: bold; background-color: #2563eb; padding: 2px 6px; border-radius: 4px; }
+.hl-red { color: #dc2626; font-weight: bold; }
+
+/* Pinyin mặt trước: căn giữa */
+.pinyin{
+  font-size:1.68em;
+  color:#666666;
+  margin-bottom:10px;
+  font-weight:bold;
+  text-align:center;
+  width:100%;
+}
+
+.zh-front { font-size: 2.16em; font-weight: bold; margin-bottom: 6px; line-height: 1.3; color: #dc2626; text-align: center; width: 100%; }
+
+/* Mặt sau */
+.zh-back { color: #2563eb; font-weight: bold; font-size: 1.74em; line-height: 1.2; display: inline-block; margin-top: 8px; margin-bottom: 2px; }
+.pinyin-back { color: #666666; font-weight: bold; font-size: 1.2em; display: block; margin: 2px 0; }
+.vi-back { font-size: 1.2em; color: #333; display: block; margin-bottom: 10px; }
+
+.desc-front { font-size: 1.38em; color: #333; margin: 8px 0; text-align: left; width: 100%; line-height: 1.4; }
+.desc{font-size: 1.38em; color: #333; margin: 0; text-align: left; width: 100%; line-height: 1.4;}
+
+.controls{display:flex;gap:20px;justify-content:center;margin-top:30px}
+button{
+  border:0;border-radius:20px;padding:20px 35px;font-size:26.4px;
+  cursor:pointer;background:#e9eef7;color:#233044; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,.1);
+}
+button.primary{background:#2563eb;color:white}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <h1 id="title">BÀI 10 – NGỮ PHÁP</h1>
+  <div class="progress" id="progress"></div>
+
+  <div class="card-wrap" id="cardWrap" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="face front" id="frontFace"></div>
+      <div class="face back" id="backFace"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="event.stopPropagation();prevCard()">← TRƯỚC</button>
+    <button class="primary" onclick="event.stopPropagation();flipCard()">LẬT THẺ</button>
+    <button onclick="event.stopPropagation();nextCard()">TIẾP →</button>
+  </div>
+</div>
+
+<script>
+const cards = [
+  {
+    f: "<div class='zh-front'>CÂU TỒN TẠI XUẤT HIỆN</div>" +
+       "<div class='zh-front'><span style='background-color: #2563eb; color: #ffffff; padding: 2px 6px; border-radius: 4px;'>在  有  是</span></div>" +
+       "<div class='desc-front'>" +
+       "• Ai/cái gì + <span class='hl-red'>在</span> + nơi chốn<br>" +
+       "• Nơi chốn + <span class='hl-red'>有 / 是</span> + ai/cái gì<br><br>" +
+       "• <b>Phân biệt 有 và 是:</b><br>" +
+       "- Sau 有: người/vật không xác định (chung chung).<br>" +
+       "- Sau 是: người/vật xác định hoặc không xác định.<br>" +
+       "<i>Ví dụ:<br></i> 图书馆对面是我们学校 (Xác định nên dùng 是, không dùng 有)." +
+       "</div>",
+    b: "<div class='desc' style='line-height:1.5;'>" +
+       "<span class='zh-back'>保罗在西蒙后边。</span><br><span class='pinyin-back'>Bǎoluō zài Xīméng hòubian.</span><span class='vi-back'>(Paul ở phía sau Simon)</span>" +
+       "<span class='zh-back'>办公楼在教学楼北边。</span><br><span class='pinyin-back'>Bàngōnglóu zài jiàoxuélóu běibian.</span><span class='vi-back'>(Tòa nhà văn phòng ở phía bắc tòa nhà giảng dạy)</span>" +
+       "<span class='zh-back'>学校附近有很多饭馆和商店。</span><br><span class='pinyin-back'>Xuéxiào fùjìn yǒu hěn duō fànguǎn hé shāngdiàn.</span><span class='vi-back'>(Gần trường có rất nhiều nhà hàng và cửa hàng)</span>" +
+       "<span class='zh-back'>图书馆旁边有一个商店。</span><br><span class='pinyin-back'>Túshūguǎn pángbiān yǒu yí gè shāngdiàn.</span><span class='vi-back'>(Bên cạnh thư viện có một cửa hàng — chưa biết rõ cửa hàng nào)</span>" +
+       "<span class='zh-back'>图书馆旁边是我们的学校。</span><br><span class='pinyin-back'>Túshūguǎn pángbiān shì wǒmen de xuéxiào.</span><span class='vi-back'>(Bên cạnh thư viện là trường của chúng tôi — xác định rõ là trường học)</span>" +
+       "</div>"
+  },
+  {
+    f: "<div class='zh-front'>TỪ CHỈ PHƯƠNG HƯỚNG</div>" +
+       "<div class='zh-front'><span style='background-color: #2563eb; color: #ffffff; padding: 2px 6px; border-radius: 4px;'>方位词</span></div>" +
+       "<div class='desc-front'>" +
+       "Dùng để chỉ vị trí, phương hướng như: 前边, 后边, 里边, 外边, 旁边, 中间, 左边, 右边, 上边, 下边, 东边, 西边, 南边, 北边.<br>" +
+       "Hoạt động như danh từ thông thường (làm Chủ ngữ, Tân ngữ, Định ngữ).<br><br>" +
+       "• <b>Lưu ý về 的:</b><br>" +
+       "- Làm định ngữ đứng trước danh từ: <br>Thường có <span class='hl-red'>的</span> (VD: 上边的书).<br>" +
+       "- Đứng sau thành phần bổ nghĩa khác: <br>Không dùng <span class='hl-red'>的</span> (VD: 学校东边)." +
+       "</div>",
+    b: "<div class='desc' style='line-height:1.5;'>" +
+       "<span class='zh-back'>左边是小雨，右边是英男。</span><br><span class='pinyin-back'>Zuǒbian shì Xiǎoyǔ, yòubian shì Yīngnán.</span><span class='vi-back'>(Bên trái là Tiểu Vũ, bên phải là Anh Nam)</span>" +
+       "<span class='zh-back'>图书馆楼在办公楼西边。</span><br><span class='pinyin-back'>Túshūguǎnlóu zài bàngōnglóu xībian.</span><span class='vi-back'>(Tòa nhà thư viện ở phía tây tòa nhà văn phòng)</span>" +
+       "<span class='zh-back'>西蒙在小雨和英男中间。</span><br><span class='pinyin-back'>Xīméng zài Xiǎoyǔ hé Yīngnán zhōngjiān.</span><span class='vi-back'>(Simon ở giữa Tiểu Vũ và Anh Nam)</span>" +
+       "<span class='zh-back'>上边的书是我的。</span><br><span class='pinyin-back'>Shàngbian de shū shì wǒ de.</span><span class='vi-back'>(Quyển sách ở trên là của tôi — có 的)</span>" +
+       "<span class='zh-back'>学校东边有一个电影院。</span><br><span class='pinyin-back'>Xuéxiào dōngbian yǒu yí gè diànyǐngyuàn.</span><span class='vi-back'>(Phía đông trường học có một rạp chiếu phim — không dùng 的)</span>" +
+       "</div>"
+  }
+];
+
+let idx = 0;
+
+function render() {
+  document.getElementById('frontFace').innerHTML = cards[idx].f;
+  document.getElementById('backFace').innerHTML = cards[idx].b;
+  document.getElementById('progress').innerText = `Thẻ ${idx + 1} / ${cards.length}`;
+}
+
+function flipCard() {
+  document.getElementById('card').classList.toggle('flipped');
+}
+
+function nextCard() {
+  idx = (idx + 1) % cards.length;
+  document.getElementById('card').classList.remove('flipped');
+  render();
+}
+
+function prevCard() {
+  idx = (idx - 1 + cards.length) % cards.length;
+  document.getElementById('card').classList.remove('flipped');
+  render();
+}
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    nextCard();
+    event.preventDefault();
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    prevCard();
+    event.preventDefault();
+  } else if (event.key === ' ' || event.key === 'Enter') {
+    flipCard();
+    event.preventDefault();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

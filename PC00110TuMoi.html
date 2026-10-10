@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BÀI 10 - TỪ MỚI</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:Arial,"Microsoft YaHei",sans-serif;
+  background:linear-gradient(135deg,#eef4ff,#f9fbff);
+  display:flex; justify-content:center; color:#202124;
+}
+.app{width:min(720px,94vw); padding:28px 0 36px}
+h1{text-align:center;margin:0 0 8px;font-size:28px}
+.subtitle{text-align:center;color:#666;margin-bottom:18px}
+.progress{text-align:center;font-size:15px;color:#666;margin-bottom:14px}
+.card-wrap{perspective:1200px; cursor:pointer}
+.card{
+  width:100%; height:489px; position:relative; transform-style:preserve-3d;
+  transition:transform .55s ease;
+}
+.card.flipped{transform:rotateY(180deg)}
+.face{
+  position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:24px; background:white; box-shadow:0 12px 35px rgba(30,60,100,.15);
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  padding:30px; border:1px solid #e6eaf0; text-align:center;
+}
+.zh{
+  color: #e53e3e;
+  font-weight: bold;
+}
+.front .han{font-size:168px; line-height: 1.2;}
+.front .hint{margin-top:28px;color:#999;font-size:28px}
+
+.back{transform:rotateY(180deg); justify-content:flex-start; padding-top:20px; overflow-y:auto;}
+.back .han{font-size:108px; margin-bottom:4px; line-height: 1.2;}
+.pinyin{font-size:65px;font-weight:700;color:#2b6cb0;margin-bottom:4px}
+.pos{font-size:29px;font-style:italic;color:#718096;margin-bottom:6px}
+.meaning{font-size:36px;color:#2d3748;font-weight:500;margin-bottom:10px}
+.note{font-size:24px;color:#4a5568;background:#f7fafc;padding:10px 14px;border-radius:12px;border-left:4px solid #cbd5e0;max-width:90%;margin:0 auto;line-height:1.4;text-align:left;}
+.note i{font-style:italic;}
+.controls{display:flex;gap:12px;justify-content:center;margin-top:22px}
+button{
+  border:0;border-radius:14px;padding:13px 20px;font-size:16px;
+  cursor:pointer;background:#e9eef7;color:#233044;
+}
+button.primary{background:#2563eb;color:white}
+button:hover{filter:brightness(.97)}
+.extra{display:flex;justify-content:center;gap:10px;margin-top:14px}
+.speak{background:#fff4d6}
+.shuffle{background:#e9f8ef}
+@media(max-width:520px){
+ .app{padding-top:20px}.card{height:435px}
+ .front .han{font-size:108px}
+ .front .hint{font-size:22px}
+ .back .han{font-size:72px}
+ .pinyin{font-size:43px}
+ .pos{font-size:24px}
+ .meaning{font-size:29px}
+ .note{font-size:19px; padding:8px 10px;}
+ .controls button{padding:12px 14px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🇨🇳 BÀI 10 - TỪ MỚI</h1>
+
+  <div class="progress" id="progress"></div>
+
+  <div class="card-wrap" id="cardWrap" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="face front">
+        <div class="han zh" id="frontHan"></div>
+      </div>
+      <div class="face back">
+        <div class="han zh" id="backHan"></div>
+        <div class="pinyin" id="pinyin"></div>
+        <div class="pos" id="pos"></div>
+        <div class="meaning" id="meaning"></div>
+        <div class="note" id="note" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="event.stopPropagation();prevCard()">← Trước</button>
+    <button class="primary" onclick="event.stopPropagation();flipCard()">Lật thẻ</button>
+    <button onclick="event.stopPropagation();nextCard()">Tiếp →</button>
+  </div>
+  <div class="extra">
+    <button class="speak" onclick="event.stopPropagation();speak()">🔊 Nghe phát âm</button>
+    <button class="shuffle" onclick="event.stopPropagation();shuffleCards()">🔀 Trộn từ</button>
+  </div>
+</div>
+
+<script>
+const originalCards = [
+  { "han": "里边", "pinyin": "lǐbian", "pos": "danh từ", "meaning": "bên trong", "note": "" },
+  { "han": "教学楼", "pinyin": "jiàoxuélóu", "pos": "danh từ", "meaning": "tòa nhà giảng dạy", "note": "" },
+  { "han": "办公楼", "pinyin": "bàngōnglóu", "pos": "danh từ", "meaning": "tòa nhà văn phòng", "note": "" },
+  { "han": "北边", "pinyin": "běibian", "pos": "danh từ", "meaning": "phía bắc", "note": "" },
+  { "han": "西边", "pinyin": "xībian", "pos": "danh từ", "meaning": "phía tây", "note": "" },
+  { "han": "南边", "pinyin": "nánbian", "pos": "danh từ", "meaning": "phía nam", "note": "" },
+  { "han": "附近", "pinyin": "fùjìn", "pos": "danh từ", "meaning": "gần, xung quanh", "note": "" },
+  { "han": "饭馆", "pinyin": "fànguǎn", "pos": "danh từ", "meaning": "nhà hàng, quán cơm", "note": "" },
+  { "han": "东边", "pinyin": "dōngbiān", "pos": "danh từ", "meaning": "phía đông", "note": "" },
+  { "han": "还", "pinyin": "hái", "pos": "phó từ", "meaning": "vẫn, còn, cũng", "note": "" },
+  { "han": "电影院", "pinyin": "diànyǐngyuàn", "pos": "danh từ", "meaning": "rạp chiếu phim", "note": "" },
+  { "han": "电影", "pinyin": "diànyǐng", "pos": "danh từ", "meaning": "phim", "note": "" },
+  { "han": "对面", "pinyin": "duìmiàn", "pos": "danh từ", "meaning": "phía đối diện", "note": "" },
+  { "han": "药店", "pinyin": "yàodiàn", "pos": "danh từ", "meaning": "hiệu thuốc", "note": "" },
+  { "han": "旁边", "pinyin": "pángbiān", "pos": "danh từ", "meaning": "bên cạnh", "note": "" },
+  { "han": "超市", "pinyin": "chāoshì", "pos": "danh từ", "meaning": "siêu thị", "note": "" },
+  { "han": "们", "pinyin": "men", "pos": "hậu tố", "meaning": "chỉ số nhiều", "note": "" },
+  { "han": "照片", "pinyin": "zhàopiàn", "pos": "danh từ", "meaning": "ảnh chụp", "note": "" },
+  { "han": "左边", "pinyin": "zuǒbian", "pos": "danh từ", "meaning": "bên trái", "note": "" },
+  { "han": "右边", "pinyin": "yòubian", "pos": "danh từ", "meaning": "bên phải", "note": "" },
+  { "han": "中间", "pinyin": "zhōngjiān", "pos": "danh từ", "meaning": "ở giữa", "note": "" },
+  { "han": "后边", "pinyin": "hòubian", "pos": "danh từ", "meaning": "phía sau", "note": "" },
+  { "han": "桌子", "pinyin": "zhuōzi", "pos": "danh từ", "meaning": "bàn", "note": "" },
+  { "han": "上边", "pinyin": "shàngbian", "pos": "danh từ", "meaning": "phía trên", "note": "" },
+  { "han": "台灯", "pinyin": "táidēng", "pos": "danh từ", "meaning": "đèn bàn", "note": "" },
+  { "han": "张", "pinyin": "zhāng", "pos": "lượng từ", "meaning": "tấm, chiếc", "note": "cho bàn, giấy, ảnh..." },
+  { "han": "男朋友", "pinyin": "nánpéngyou", "pos": "danh từ", "meaning": "bạn trai", "note": "" },
+  { "han": "男", "pinyin": "nán", "pos": "tính từ", "meaning": "nam", "note": "" },
+  { "han": "下边", "pinyin": "xiàbian", "pos": "danh từ", "meaning": "phía dưới", "note": "" },
+  { "han": "抽屉", "pinyin": "chōuti", "pos": "danh từ", "meaning": "ngăn kéo", "note": "" },
+  { "han": "块", "pinyin": "kuài", "pos": "lượng từ", "meaning": "miếng, cục, mẩu", "note": "" },
+  { "han": "巧克力", "pinyin": "qiǎokèlì", "pos": "danh từ", "meaning": "sô-cô-la", "note": "" },
+  { "han": "前边", "pinyin": "qiánbian", "pos": "danh từ", "meaning": "phía trước", "note": "" },
+  { "han": "鞋", "pinyin": "xié", "pos": "danh từ", "meaning": "giày", "note": "" },
+  { "han": "眼镜", "pinyin": "yǎnjìng", "pos": "danh từ", "meaning": "kính mắt", "note": "" },
+  { "han": "闹钟", "pinyin": "nàozhōng", "pos": "danh từ", "meaning": "đồng hồ báo thức", "note": "" }
+];
+
+let cards = [...originalCards];
+let index = 0;
+let flipped = false;
+
+function render(){
+  const c = cards[index];
+  document.getElementById('frontHan').textContent = c.han;
+  document.getElementById('backHan').textContent = c.han;
+  document.getElementById('pinyin').textContent = c.pinyin;
+  document.getElementById('pos').textContent = c.pos;
+  document.getElementById('meaning').innerHTML = c.meaning;
+  
+  const noteEl = document.getElementById('note');
+  if(c.note && c.note.trim() !== ""){
+    noteEl.innerHTML = c.note;
+    noteEl.style.display = "block";
+  } else {
+    noteEl.style.display = "none";
+  }
+
+  document.getElementById('progress').textContent = `Từ ${index+1} / ${cards.length}`;
+  document.getElementById('card').classList.toggle('flipped', flipped);
+}
+
+function flipCard(){
+  flipped = !flipped;
+  document.getElementById('card').classList.toggle('flipped', flipped);
+}
+
+function nextCard(){
+  index = (index + 1) % cards.length;
+  flipped = false; render();
+}
+
+function prevCard(){
+  index = (index - 1 + cards.length) % cards.length;
+  flipped = false; render();
+}
+
+function shuffleCards(){
+  for(let i=cards.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [cards[i],cards[j]]=[cards[j],cards[i]];
+  }
+  index=0; flipped=false; render();
+}
+
+function speak(){
+  const text=cards[index].han;
+  if('speechSynthesis' in window){
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='zh-CN'; u.rate=.75;
+    speechSynthesis.speak(u);
+  }else{
+    alert('Trình duyệt của bạn không hỗ trợ phát âm.');
+  }
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') nextCard();
+  else if(e.key==='ArrowLeft') prevCard();
+  else if(e.key===' ' || e.key==='Enter'){
+    e.preventDefault();
+    flipCard();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
